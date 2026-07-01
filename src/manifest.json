@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "FB Group Scanner",
+  "version": "1.0.0",
+  "description": "Scan Facebook group posts for keywords and forward matches to Telegram or export.",
+  "permissions": ["storage", "alarms", "tabs", "scripting", "downloads", "notifications", "offscreen"],
+  "host_permissions": ["https://www.facebook.com/*", "https://api.telegram.org/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/groups/*"],
+      "js": ["src/content/facebook-scraper.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "FB Group Scanner",
+    "default_icon": {
+      "16": "icons/icon.svg",
+      "48": "icons/icon.svg",
+      "128": "icons/icon.svg"
+    }
+  },
+  "options_page": "src/options/index.html"
+}

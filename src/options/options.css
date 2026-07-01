@@ -1,0 +1,316 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: #1c1e21;
+  background: #f0f2f5;
+  line-height: 1.5;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+header h1 {
+  font-size: 24px;
+  color: #1877f2;
+}
+
+.subtitle {
+  color: #65676b;
+  margin-top: 4px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.hint {
+  color: #65676b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.group-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.group-input-row input {
+  flex: 1;
+}
+
+.group-input-multiline {
+  align-items: flex-start;
+}
+
+.group-input-multiline textarea {
+  flex: 1;
+  min-height: 88px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.hint-example {
+  background: #f0f2f5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.group-add-status {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.group-add-status.success {
+  color: #42b72a;
+}
+
+.group-add-status.warn {
+  color: #b36a00;
+}
+
+.group-add-status.error {
+  color: #e41e3f;
+}
+
+input[type="text"],
+input[type="url"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  padding: 8px 12px;
+  border: 1px solid #ccd0d5;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field-row label {
+  flex-shrink: 0;
+  min-width: 140px;
+}
+
+.field-row input,
+.field-row select {
+  max-width: 200px;
+}
+
+.date-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.rule-input-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 520px) {
+  .rule-input-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rule-card {
+  border: 1px solid #e4e6eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f7f8fa;
+}
+
+.rule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rule-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rule-logic {
+  font-size: 12px;
+  color: #65676b;
+  margin-bottom: 8px;
+}
+
+.rule-add-keyword {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rule-add-keyword input {
+  flex: 1;
+}
+
+.hint code {
+  background: #f0f2f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.chip-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e7f3ff;
+  color: #1877f2;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.chip-list li .remove {
+  background: none;
+  border: none;
+  color: #65676b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.chip-list li .remove:hover {
+  color: #e41e3f;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: #1877f2;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #166fe5;
+}
+
+.btn-muted {
+  background: #e4e6eb;
+  color: #1c1e21;
+}
+
+.import-status {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.import-status.success {
+  color: #42b72a;
+}
+
+.import-status.error {
+  color: #e41e3f;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.import-label {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save-status {
+  color: #42b72a;
+  font-size: 13px;
+}
+
+.test-result {
+  margin-left: 8px;
+  font-size: 13px;
+}
+
+.test-result.success {
+  color: #42b72a;
+}
+
+.test-result.error {
+  color: #e41e3f;
+}

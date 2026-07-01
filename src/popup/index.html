@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FB Group Scanner</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>FB Group Scanner</h1>
+    </header>
+
+    <section class="status" id="status-section">
+      <div class="status-row">
+        <span class="label">Last scan</span>
+        <span id="last-scan">Never</span>
+      </div>
+      <div class="status-row">
+        <span class="label">Last matches</span>
+        <span id="last-matches">0</span>
+      </div>
+      <div class="status-row">
+        <span class="label">Scan after</span>
+        <span id="scan-after">All dates</span>
+      </div>
+      <div class="status-row" id="scanning-row" hidden>
+        <span class="label">Progress</span>
+        <span id="progress-text">—</span>
+      </div>
+      <div class="progress-bar" id="progress-bar" hidden>
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="btn-scan-current" class="btn btn-primary">Scan current group</button>
+      <button id="btn-scan-all" class="btn btn-secondary">Scan all groups</button>
+      <button id="btn-stop-scan" class="btn btn-danger" hidden>Stop scan</button>
+      <a href="#" id="link-options" class="link-options">Open settings</a>
+    </section>
+
+    <p class="error" id="error-msg" hidden></p>
+    <p class="done" id="done-msg" hidden></p>
+  </div>
+  <script type="module" src="popup.ts"></script>
+</body>
+</html>
