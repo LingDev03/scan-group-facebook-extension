@@ -10,7 +10,7 @@ const sampleConfig: ScannerConfig = {
   schedule: { enabled: true, intervalMinutes: 60 },
   telegram: { enabled: true, botToken: 'token', chatId: 'chat' },
   export: { enabled: true, format: 'json' },
-  scanBehavior: { maxScrolls: 20, scrollDelayMs: 2000 },
+  scanBehavior: { maxScrolls: 20, scrollDelayMs: 2000, scanConcurrency: 2 },
 };
 
 describe('settings-export', () => {

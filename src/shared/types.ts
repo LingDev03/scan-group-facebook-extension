@@ -19,7 +19,7 @@ export interface ScannerConfig {
   schedule: { enabled: boolean; intervalMinutes: number };
   telegram: { enabled: boolean; botToken: string; chatId: string };
   export: { enabled: boolean; format: 'json' | 'csv' };
-  scanBehavior: { maxScrolls: number; scrollDelayMs: number };
+  scanBehavior: { maxScrolls: number; scrollDelayMs: number; scanConcurrency: number };
 }
 
 export interface PostAttachment {
@@ -84,7 +84,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   schedule: { enabled: false, intervalMinutes: 60 },
   telegram: { enabled: false, botToken: '', chatId: '' },
   export: { enabled: true, format: 'json' },
-  scanBehavior: { maxScrolls: 20, scrollDelayMs: 2000 },
+  scanBehavior: { maxScrolls: 20, scrollDelayMs: 2000, scanConcurrency: 2 },
 };
 
 export const DEFAULT_SCAN_STATE: ScanState = {

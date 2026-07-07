@@ -5,11 +5,16 @@ Chrome/Edge Manifest V3 extension that scans Facebook group posts for configured
 ## Features
 
 - Scan multiple Facebook groups for keyword matches
+- **Parallel scanning** — open 1–4 group tabs at once (configurable)
+- **Keyword rules** — AND within each rule, OR between rules (case-insensitive)
 - Filter posts by "scan after" date (only posts on or after that date)
 - Manual scan from popup (current group or all configured groups)
+- **Stop scan** button while a scan is running
 - Scheduled background scans via `chrome.alarms` (while Chrome is running)
-- Send matches to a Telegram bot
+- Send matches to a Telegram bot (HTML formatting, images when available)
 - Export matches as JSON or CSV
+- **Settings backup** — import/export configuration as JSON
+- Deduplication via stored post IDs (no repeat Telegram/export for the same post)
 
 ## Requirements
 
@@ -37,18 +42,22 @@ For development with auto-rebuild:
 npm run dev
 ```
 
-Reload the extension in `chrome://extensions` after changes.
+Reload the extension in `chrome://extensions` after changes. Refresh open Facebook group tabs so the content script picks up updates.
 
 ## Configuration
 
 Open the extension **Options** page (right-click extension icon → Options, or link from popup):
 
-1. **Groups** — Add Facebook group URLs (`https://www.facebook.com/groups/{id}`)
-2. **Keywords** — Add keywords (case-insensitive, OR match)
+1. **Groups** — One group per line: full URL, numeric ID, or slug
+2. **Keyword rules** — Comma-separated keywords per rule (all must match). Multiple rules are OR'd
 3. **Scan posts after** — Optional date; only posts on or after this date are included
-4. **Schedule** — Enable automatic scans at 30/60/120/240 minute intervals
-5. **Telegram** — Bot token + chat ID (optional)
-6. **Export** — Download JSON or CSV when matches are found
+4. **Scan behavior**
+   - **Max scrolls** / **Scroll delay** — how deep and how fast to scroll each group feed
+   - **Parallel groups** (1–4, default 2) — how many groups to scan at the same time. Higher is faster but uses more RAM; Facebook may rate-limit aggressive scanning
+5. **Schedule** — Enable automatic scans at 30/60/120/240 minute intervals
+6. **Telegram** — Bot token + chat ID (optional)
+7. **Export** — Download JSON or CSV when matches are found
+8. **Backup settings** — Export/import full configuration as JSON
 
 ## Telegram setup
 
@@ -58,21 +67,39 @@ Open the extension **Options** page (right-click extension icon → Options, or 
 4. Find `"chat":{"id":...}` in the JSON response — that's your chat ID
 5. Paste token + chat ID in Options → click **Test connection** → **Save**
 
+Telegram messages use HTML formatting. Post content is parsed from the Facebook DOM when possible (bold, links, line breaks). Posts with images may be sent as `sendPhoto` with a caption.
+
 ## Usage
 
-- **Scan current group** — Scans the active tab if it's a Facebook group page
-- **Scan all groups** — Opens each configured group in a background tab, scrolls the feed, and collects matches
-- Matched posts are deduplicated via stored post IDs (no repeat Telegram/export for the same post)
+- **Scan current group** — Scans the active tab if it's a Facebook group page (always one tab)
+- **Scan all groups** — Scans configured groups in parallel batches, then sends new matches to Telegram/export
+- **Stop scan** — Stops the active scan, closes owned background tabs, and cancels in-progress content scripts
+- Progress and completion are shown in the popup; a notification appears when the full run finishes
 
 ## How it works
 
-The content script runs on `facebook.com/groups/*` pages and:
+### Content script (`facebook.com/groups/*`)
 
 1. Intercepts Facebook GraphQL responses to extract post data
-2. Falls back to DOM parsing if GraphQL structure changes
-3. Auto-scrolls the feed to load more posts
-4. Applies date and keyword filters
-5. Stops scrolling early when consecutive posts are older than the scan-after date
+2. Falls back to DOM parsing; expands **See more** when present
+3. Parses message DOM → Telegram HTML (`textHtml`) for richer notifications
+4. Auto-scrolls the feed to load more posts
+5. Applies date and keyword filters after collection
+6. Stops scrolling early when consecutive posts are older than the scan-after date
+
+### Background service worker
+
+1. Queues groups and processes them in **batches** (`scanConcurrency` tabs in parallel)
+2. After each group in a batch: dedup → Telegram → export → close tab
+3. Uses an offscreen document + alarms to keep the service worker alive during long multi-group scans
+4. Persists scan queue to `chrome.storage` and can **resume** after a service worker restart
+
+### Debugging
+
+Filter console logs with `[FB Scanner]`:
+
+- **Facebook tab** (F12) — scroll, DOM/GraphQL capture, filter
+- **Service worker** (`chrome://extensions` → Inspect) — queue steps, parallel batches, Telegram, resume
 
 ## Tests
 
@@ -86,17 +113,30 @@ npm test
 - **Scheduled scans** only run while Chrome is open (`chrome.alarms` does not wake a closed browser)
 - **Terms of service** — Automated scraping may violate Facebook ToS; use at your own risk
 - **Private groups** — You must be a member; the extension cannot access groups you haven't joined
-- **Rate limiting** — Default scroll settings include delays to reduce load; adjust in Options if needed
+- **Rate limiting** — Use reasonable scroll delays and parallel group count; Facebook may throttle or challenge heavy use
+- **Telegram images** — Facebook image URLs are sometimes rejected by Telegram; text is still sent
+- **Formatting** — DOM-based HTML improves readability but is not pixel-perfect vs the Facebook UI
+- **Scan scope** — Only loads posts visible while scrolling the feed; not full group history
 
 ## Project structure
 
 ```
 src/
-├── background/service-worker.ts   # Scan orchestration, alarms, Telegram/export dispatch
-├── content/facebook-scraper.ts    # GraphQL intercept, scroll, parse, filter
-├── popup/                         # Quick scan UI
-├── options/                       # Configuration page
-└── shared/                        # Types, storage, matchers, export, Telegram client
+├── background/
+│   ├── service-worker.ts    # Scan queue, parallel batches, alarms, Telegram/export
+│   └── keep-alive.ts        # Offscreen document during long scans
+├── content/
+│   └── facebook-scraper.ts  # GraphQL intercept, scroll, DOM parse, filter
+├── popup/                   # Scan / stop UI
+├── options/                 # Configuration page
+└── shared/
+    ├── scan-queue.ts        # Persistent multi-group scan queue
+    ├── dom-to-telegram-html.ts
+    ├── telegram-client.ts
+    ├── keyword-matcher.ts
+    └── ...
+public/
+└── offscreen.html           # Keep-alive page for MV3 service worker
 ```
 
 ## License

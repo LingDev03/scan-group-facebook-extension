@@ -13,11 +13,26 @@ export interface ScanQueue {
   totalTelegramSent: number;
   mode: 'groups' | 'current_tab';
   activeTabId?: number;
+  /** Snapshot at scan start — groups scanned in parallel per batch */
+  concurrency: number;
+}
+
+export function pickScanBatch(
+  groups: GroupConfig[],
+  startIndex: number,
+  concurrency: number,
+): GroupConfig[] {
+  const size = Math.max(1, concurrency);
+  return groups.slice(startIndex, startIndex + size);
 }
 
 export function createScanQueue(
   groups: GroupConfig[],
-  options: { mode?: ScanQueue['mode']; activeTabId?: number } = {},
+  options: {
+    mode?: ScanQueue['mode'];
+    activeTabId?: number;
+    concurrency?: number;
+  } = {},
 ): ScanQueue {
   return {
     active: true,
@@ -28,6 +43,7 @@ export function createScanQueue(
     totalTelegramSent: 0,
     mode: options.mode ?? 'groups',
     activeTabId: options.activeTabId,
+    concurrency: options.concurrency ?? 2,
   };
 }
 

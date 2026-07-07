@@ -12,6 +12,7 @@ import {
   createScanQueue,
   getScanQueue,
   markScanQueueStopped,
+  pickScanBatch,
   saveScanQueue,
   SCAN_STEP_ALARM,
   SCAN_KEEPALIVE_ALARM,
@@ -505,10 +506,12 @@ async function startScanQueue(
 
   resetScanSession();
 
-  const queue = createScanQueue(groups, options);
+  const config = await getConfig();
+  const concurrency = options.mode === 'current_tab' ? 1 : config.scanBehavior.scanConcurrency;
+  const queue = createScanQueue(groups, { ...options, concurrency });
   await saveScanQueue(queue);
 
-  log('Run scan', `${groups.length} group(s) — queued`);
+  log('Run scan', `${groups.length} group(s) — queued (concurrency ${concurrency})`);
 
   await saveScanState({
     isScanning: true,
@@ -520,6 +523,54 @@ async function startScanQueue(
   await scheduleScanStep(0);
 
   return { ok: true, matchCount: 0, started: true };
+}
+
+interface SingleGroupResult {
+  newCount: number;
+  telegramSent: number;
+}
+
+async function scanSingleGroup(
+  group: GroupConfig,
+  config: ScannerConfig,
+  queue: ScanQueue,
+  stepIndex: number,
+  total: number,
+): Promise<SingleGroupResult> {
+  if (await shouldStopScan()) return { newCount: 0, telegramSent: 0 };
+
+  log('Run scan', `group ${stepIndex}/${total}: ${group.name}`);
+
+  let tabId: number | undefined;
+  try {
+    if (queue.mode === 'current_tab' && queue.activeTabId) {
+      tabId = queue.activeTabId;
+      trackScanTab(tabId, false);
+    } else {
+      const opened = await openGroupTab(group);
+      if (opened == null || (await shouldStopScan())) {
+        return { newCount: 0, telegramSent: 0 };
+      }
+      tabId = opened;
+    }
+
+    const matches = await scanTab(tabId, config, group);
+    if (await shouldStopScan()) return { newCount: 0, telegramSent: 0 };
+
+    return await processMatches(matches, config, group, {
+      current: stepIndex,
+      total,
+    });
+  } catch (err) {
+    if (!(await shouldStopScan())) {
+      console.error(`${LOG_PREFIX} Scan failed for ${group.name}:`, err);
+    }
+    return { newCount: 0, telegramSent: 0 };
+  } finally {
+    if (tabId) {
+      await closeScanTab(tabId);
+    }
+  }
 }
 
 async function processScanStep(): Promise<void> {
@@ -553,43 +604,27 @@ async function processScanStep(): Promise<void> {
     }
 
     const config = await getConfig();
-    const group = queue.groups[queue.currentIndex];
-    const step = queue.currentIndex + 1;
     const total = queue.groups.length;
+    const batch = pickScanBatch(queue.groups, queue.currentIndex, queue.concurrency);
+    const batchLabel = batch.map((g) => g.name).join(', ');
+    const completedAfterBatch = Math.min(queue.currentIndex + batch.length, total);
 
-    log('Run scan', `group ${step}/${total}: ${group.name}`);
-    await updateScanProgress(step, total, `Scanning ${group.name}...`, group.name);
+    log('Run scan', `batch ${queue.currentIndex + 1}-${completedAfterBatch}/${total}: ${batchLabel}`);
+    await updateScanProgress(
+      completedAfterBatch,
+      total,
+      `Scanning ${batch.length} group(s): ${batchLabel}...`,
+      batchLabel,
+    );
 
-    let tabId: number | undefined;
-    try {
-      if (queue.mode === 'current_tab' && queue.activeTabId) {
-        tabId = queue.activeTabId;
-        trackScanTab(tabId, false);
-      } else {
-        const opened = await openGroupTab(group);
-        if (opened == null || (await shouldStopScan())) return;
-        tabId = opened;
-      }
+    const results = await Promise.all(
+      batch.map((group, offset) =>
+        scanSingleGroup(group, config, queue, queue.currentIndex + offset + 1, total),
+      ),
+    );
 
-      const matches = await scanTab(tabId, config, group);
-      if (await shouldStopScan()) return;
-
-      const { newCount, telegramSent } = await processMatches(matches, config, group, {
-        current: step,
-        total,
-      });
-
-      queue.totalNew += newCount;
-      queue.totalTelegramSent += telegramSent;
-    } catch (err) {
-      if (!(await shouldStopScan())) {
-        console.error(`${LOG_PREFIX} Scan failed for ${group.name}:`, err);
-      }
-    } finally {
-      if (tabId) {
-        await closeScanTab(tabId);
-      }
-    }
+    queue.totalNew += results.reduce((sum, r) => sum + r.newCount, 0);
+    queue.totalTelegramSent += results.reduce((sum, r) => sum + r.telegramSent, 0);
 
     const latest = await getScanQueue();
     if (!latest?.active || latest.stopped || (await shouldStopScan())) {
@@ -602,7 +637,9 @@ async function processScanStep(): Promise<void> {
       return;
     }
 
-    latest.currentIndex += 1;
+    latest.totalNew = queue.totalNew;
+    latest.totalTelegramSent = queue.totalTelegramSent;
+    latest.currentIndex += batch.length;
     await saveScanQueue(latest);
     syncTotalsFromQueue(latest);
 
@@ -613,6 +650,11 @@ async function processScanStep(): Promise<void> {
       return;
     }
 
+    await updateScanProgress(
+      latest.currentIndex,
+      total,
+      `Completed ${latest.currentIndex}/${total} groups`,
+    );
     await scheduleScanStep(BETWEEN_GROUPS_DELAY_MS);
   } finally {
     stepProcessing = false;
@@ -623,7 +665,7 @@ async function resumeScanIfNeeded(): Promise<void> {
   const [state, queue] = await Promise.all([getScanState(), getScanQueue()]);
 
   if (queue?.active && !queue.stopped) {
-    log('Resume scan', `group ${queue.currentIndex + 1}/${queue.groups.length}`);
+    log('Resume scan', `from group ${queue.currentIndex + 1}/${queue.groups.length} (concurrency ${queue.concurrency})`);
     syncTotalsFromQueue(queue);
     scanAlreadyFinalized = false;
     await saveScanState({ isScanning: true });

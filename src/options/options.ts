@@ -12,6 +12,7 @@ const ruleKeywordsInput = document.getElementById('rule-keywords-input') as HTML
 const scanAfterDate = document.getElementById('scan-after-date') as HTMLInputElement;
 const maxScrolls = document.getElementById('max-scrolls') as HTMLInputElement;
 const scrollDelay = document.getElementById('scroll-delay') as HTMLInputElement;
+const scanConcurrency = document.getElementById('scan-concurrency') as HTMLInputElement;
 const scheduleEnabled = document.getElementById('schedule-enabled') as HTMLInputElement;
 const scheduleInterval = document.getElementById('schedule-interval') as HTMLSelectElement;
 const telegramEnabled = document.getElementById('telegram-enabled') as HTMLInputElement;
@@ -270,6 +271,7 @@ function collectConfig(): ScannerConfig {
     scanBehavior: {
       maxScrolls: Number(maxScrolls.value) || 20,
       scrollDelayMs: Number(scrollDelay.value) || 2000,
+      scanConcurrency: Number(scanConcurrency.value) || 2,
     },
   };
 }
@@ -295,6 +297,7 @@ function applyConfigToForm(config: ScannerConfig): void {
   scanAfterDate.value = config.scanAfterDate ?? '';
   maxScrolls.value = String(config.scanBehavior.maxScrolls);
   scrollDelay.value = String(config.scanBehavior.scrollDelayMs);
+  scanConcurrency.value = String(config.scanBehavior.scanConcurrency);
   scheduleEnabled.checked = config.schedule.enabled;
   scheduleInterval.value = String(config.schedule.intervalMinutes);
   telegramEnabled.checked = config.telegram.enabled;
